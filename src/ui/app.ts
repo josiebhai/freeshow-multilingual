@@ -1,5 +1,5 @@
 import { convert, parseStanzas, type LanguageBox, type SongMetadata } from "../lib/convert";
-import { groupColorFor, tagColorFor } from "../lib/tagColor";
+import { groupColorFor, tagColorForIndex } from "../lib/tagColor";
 
 interface BoxState extends LanguageBox {
   id: string;
@@ -52,7 +52,7 @@ const FAQ_ITEMS: { question: string; answer: string }[] = [
   {
     question: "What should I put in the language code field?",
     answer:
-      "A short ISO 639-1 code — <code>en</code>, <code>es</code>, <code>fr</code>, <code>de</code>, <code>pt</code> — FreeShow uses it to label each language layer. Each code gets its own color here so it's easy to track across boxes and the output. It's optional — leave it blank for a plain <code>[#1]</code> marker.",
+      "A short ISO 639-1 code — <code>en</code>, <code>es</code>, <code>fr</code>, <code>de</code>, <code>pt</code> — FreeShow uses it to label each language layer. It's optional — leave it blank for a plain <code>[#1]</code> marker. Each language box gets its own color by position (1st, 2nd, 3rd...), so boxes stay easy to tell apart in the output even without a code.",
   },
   {
     question: "Is any of my data stored or uploaded?",
@@ -196,7 +196,7 @@ export function mountApp(root: HTMLElement): void {
     state.boxes.forEach((box, index) => {
       const card = document.createElement("div");
       card.className = "box-card";
-      const tagColor = tagColorFor(box.code);
+      const tagColor = tagColorForIndex(index);
       card.innerHTML = `
         <div class="box-header">
           <label class="box-label-field">
@@ -205,7 +205,7 @@ export function mountApp(root: HTMLElement): void {
           </label>
           <label class="box-code-field">
             <span class="visually-hidden">Language code</span>
-            <span class="tag tag-${tagColor}" data-tip="ISO code, e.g. en — colors this box's output tags">
+            <span class="tag tag-${tagColor}" data-tip="ISO code, e.g. en (optional)">
               <input type="text" class="box-code tag-input" value="${escapeAttr(box.code ?? "")}" placeholder="code" maxlength="8" aria-label="Language ${index + 1} code" />
             </span>
           </label>
@@ -224,8 +224,6 @@ export function mountApp(root: HTMLElement): void {
       });
       card.querySelector<HTMLInputElement>(".box-code")!.addEventListener("input", (e) => {
         box.code = (e.target as HTMLInputElement).value;
-        const chip = card.querySelector<HTMLElement>(".tag")!;
-        chip.className = `tag tag-${tagColorFor(box.code)}`;
         renderOutput();
       });
       card.querySelector<HTMLTextAreaElement>(".box-text")!.addEventListener("input", (e) => {
@@ -430,9 +428,10 @@ function renderOutputHtml(text: string): string {
   return text
     .split("\n")
     .map((line) => {
-      const marker = line.match(/^\[#\d+(?::(.+))?\]$/);
+      const marker = line.match(/^\[#(\d+)(?::.+)?\]$/);
       if (marker) {
-        return `<span class="out-marker tag-${tagColorFor(marker[1])}-fg">${escapeHtml(line)}</span>`;
+        const boxIndex = Number(marker[1]) - 1;
+        return `<span class="out-marker tag-${tagColorForIndex(boxIndex)}-fg">${escapeHtml(line)}</span>`;
       }
       const group = line.match(/^\[(.+)\]$/);
       if (group) {
