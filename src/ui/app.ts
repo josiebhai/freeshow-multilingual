@@ -15,6 +15,10 @@ interface State {
 let nextId = 1;
 const newId = () => `box-${nextId++}`;
 
+const REPO_URL = "https://github.com/josiebhai/freeshow-multilingual";
+const BUG_REPORT_URL = `${REPO_URL}/issues/new?template=bug_report.md`;
+const FEATURE_REQUEST_URL = `${REPO_URL}/issues/new?template=feature_request.md`;
+
 const GROUP_LABEL_PRESETS = ["Verse", "Chorus", "Bridge", "Intro", "Outro"];
 
 function initialState(): State {
@@ -78,6 +82,12 @@ export function mountApp(root: HTMLElement): void {
       <div id="warnings" class="warnings" role="status" aria-live="polite"></div>
       <textarea id="output" class="output" readonly aria-label="Converted FreeShow text" placeholder="Paste lyrics above to see the converted output here."></textarea>
     </section>
+
+    <footer class="app-footer">
+      <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+      <a href="${BUG_REPORT_URL}" target="_blank" rel="noopener noreferrer">Report a bug</a>
+      <a href="${FEATURE_REQUEST_URL}" target="_blank" rel="noopener noreferrer">Request a feature</a>
+    </footer>
   `;
 
   const boxesEl = root.querySelector<HTMLElement>("#boxes")!;

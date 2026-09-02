@@ -327,6 +327,20 @@ textarea:focus-visible {
   white-space: nowrap;
 }
 
+.app-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.app-footer a {
+  color: var(--accent);
+}
+
 @media (max-width: 600px) {
   .boxes {
     grid-template-columns: 1fr;
