@@ -99,6 +99,14 @@ ChurchApps/FreeShow itself as a native import mode (see issue #3617 above).
 - Every PR runs lint, build, and the test suite in CI; all checks must pass
   before merging.
 
+### Deployment
+
+Every push to `main` builds the app and deploys it to GitHub Pages via
+[`.github/workflows/deploy-pages.yml`](.github/workflows/deploy-pages.yml).
+The production build is served from a `/freeshow-multilingual/` subpath
+(configured in `vite.config.ts`); `npm run dev` and a plain `npm run build`
+still use `/`.
+
 ## License
 
 No license has been set yet for this repository.
