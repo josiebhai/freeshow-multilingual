@@ -1,5 +1,7 @@
 # FreeShow Multi-Language Lyrics Converter
 
+Repository: [josiebhai/freeshow-multilingual](https://github.com/josiebhai/freeshow-multilingual)
+
 A free, standalone web tool that converts lyrics pasted into separate
 per-language boxes into [FreeShow](https://freeshow.app)'s native
 multi-language import syntax — ready to paste straight into FreeShow's
