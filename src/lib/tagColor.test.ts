@@ -1,5 +1,20 @@
 import { describe, expect, it } from "vitest";
-import { TAG_PALETTE, groupColorFor, tagColorFor } from "./tagColor";
+import { TAG_PALETTE, groupColorFor, tagColorFor, tagColorForIndex } from "./tagColor";
+
+describe("tagColorForIndex", () => {
+  it("is deterministic for the same index", () => {
+    expect(tagColorForIndex(2)).toBe(tagColorForIndex(2));
+  });
+
+  it("gives distinct colors to the first N boxes, up to the palette size", () => {
+    const colors = Array.from({ length: TAG_PALETTE.length }, (_, i) => tagColorForIndex(i));
+    expect(new Set(colors).size).toBe(TAG_PALETTE.length);
+  });
+
+  it("cycles once there are more boxes than palette colors", () => {
+    expect(tagColorForIndex(0)).toBe(tagColorForIndex(TAG_PALETTE.length));
+  });
+});
 
 describe("tagColorFor", () => {
   it("is deterministic for the same code", () => {
