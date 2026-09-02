@@ -19,6 +19,8 @@ const newId = () => `box-${nextId++}`;
 const GROUP_LABEL_PRESETS = ["Verse", "Chorus", "Bridge", "Intro", "Outro"];
 
 const REPO_URL = "https://github.com/josiebhai/freeshow-multilingual";
+const BUG_REPORT_URL = `${REPO_URL}/issues/new?template=bug_report.md`;
+const FEATURE_REQUEST_URL = `${REPO_URL}/issues/new?template=feature_request.md`;
 
 const ICONS = {
   plus: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>`,
@@ -145,9 +147,9 @@ export function mountApp(root: HTMLElement): void {
     <footer class="app-footer">
       <span>Not affiliated with or endorsed by FreeShow.</span>
       <div class="footer-links">
-        <a href="${REPO_URL}" target="_blank" rel="noopener">${ICONS.github} GitHub repo</a>
-        <a href="${REPO_URL}/issues/new?labels=bug" target="_blank" rel="noopener">${ICONS.bug} Report a bug</a>
-        <a href="${REPO_URL}/issues/new?labels=enhancement" target="_blank" rel="noopener">${ICONS.feature} Request a feature</a>
+        <a href="${REPO_URL}" target="_blank" rel="noopener noreferrer">${ICONS.github} GitHub repo</a>
+        <a href="${BUG_REPORT_URL}" target="_blank" rel="noopener noreferrer">${ICONS.bug} Report a bug</a>
+        <a href="${FEATURE_REQUEST_URL}" target="_blank" rel="noopener noreferrer">${ICONS.feature} Request a feature</a>
       </div>
     </footer>
   `;
