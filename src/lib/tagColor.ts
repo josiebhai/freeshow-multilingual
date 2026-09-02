@@ -26,3 +26,23 @@ export function tagColorFor(code: string | undefined): TagColorName {
   if (!normalized) return DEFAULT_COLOR;
   return TAG_PALETTE[hashString(normalized) % TAG_PALETTE.length];
 }
+
+/**
+ * Fixed colors for the built-in slide-label presets, so the common ones
+ * (shown together in the same song) never collide the way a generic hash
+ * occasionally does — e.g. "Verse" and "Chorus" both hashing to green.
+ */
+const PRESET_GROUP_COLORS: Record<string, TagColorName> = {
+  verse: "blue",
+  chorus: "pink",
+  bridge: "violet",
+  intro: "green",
+  outro: "amber",
+};
+
+/** Maps a slide/group label to a palette color: fixed for the built-in presets, hashed for anything else. */
+export function groupColorFor(label: string | undefined): TagColorName {
+  const normalized = label?.trim().toLowerCase();
+  if (!normalized) return DEFAULT_COLOR;
+  return PRESET_GROUP_COLORS[normalized] ?? tagColorFor(normalized);
+}

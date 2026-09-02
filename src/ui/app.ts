@@ -1,5 +1,5 @@
 import { convert, parseStanzas, type LanguageBox, type SongMetadata } from "../lib/convert";
-import { tagColorFor } from "../lib/tagColor";
+import { groupColorFor, tagColorFor } from "../lib/tagColor";
 
 interface BoxState extends LanguageBox {
   id: string;
@@ -295,7 +295,7 @@ export function mountApp(root: HTMLElement): void {
           dot.style.background = "var(--fg-dim)";
           dot.style.opacity = "0.35";
         } else {
-          dot.style.background = `var(--tag-${tagColorFor(trimmed)}-fg)`;
+          dot.style.background = `var(--tag-${groupColorFor(trimmed)}-fg)`;
           dot.style.opacity = "1";
         }
       }
@@ -436,7 +436,7 @@ function renderOutputHtml(text: string): string {
       }
       const group = line.match(/^\[(.+)\]$/);
       if (group) {
-        return `<span class="out-marker tag-${tagColorFor(group[1])}-fg">${escapeHtml(line)}</span>`;
+        return `<span class="out-marker tag-${groupColorFor(group[1])}-fg">${escapeHtml(line)}</span>`;
       }
       return escapeHtml(line);
     })
