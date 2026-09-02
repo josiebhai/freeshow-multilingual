@@ -129,4 +129,40 @@ describe("convert", () => {
     expect(slides[0]).toBe("[Verse]\n[#1]\nx1");
     expect(slides[1]).toBe("[Chorus]\n[#1]\nx2");
   });
+
+  it("acceptance 9: a language code containing ']' produces a valid [#N:code] marker", () => {
+    const boxes: LanguageBox[] = [{ label: "A", code: "en]", text: "x" }];
+    const result = convert(boxes);
+    expect(result.output).toBe("[#1:en]\nx");
+  });
+
+  it("acceptance 10: a group label containing ']' produces a valid [Group] line", () => {
+    const boxes: LanguageBox[] = [{ label: "A", text: "x1" }];
+    const result = convert(boxes, { groupLabels: ["Verse]"] });
+    expect(result.output).toBe("[Verse]\n[#1]\nx1");
+  });
+
+  it("acceptance 11: a ':' in a language code or group label doesn't split into an extra marker segment", () => {
+    const boxes: LanguageBox[] = [{ label: "A", code: "en:2", text: "x1" }];
+    const result = convert(boxes, { groupLabels: ["Verse:1"] });
+    expect(result.output).toBe("[Verse1]\n[#1:en2]\nx1");
+  });
+
+  it("acceptance 12: duplicate non-empty language codes across boxes trigger a warning naming both labels", () => {
+    const boxes: LanguageBox[] = [
+      { label: "English", code: "en", text: "e1" },
+      { label: "Extra English", code: "en", text: "x1" },
+    ];
+    const result = convert(boxes);
+    expect(result.warnings).toContain("Language code 'en' is used by more than one box (English, Extra English).");
+  });
+
+  it("acceptance 13: boxes with empty/unset codes don't trigger the duplicate-code warning", () => {
+    const boxes: LanguageBox[] = [
+      { label: "A", text: "a1" },
+      { label: "B", code: "", text: "b1" },
+    ];
+    const result = convert(boxes);
+    expect(result.warnings).toEqual([]);
+  });
 });

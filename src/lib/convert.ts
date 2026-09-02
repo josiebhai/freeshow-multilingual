@@ -63,6 +63,11 @@ export function parseStanzas(text: string): string[][] {
   return stanzas;
 }
 
+/** Strip characters that would corrupt `[#N:code]` / `[Group]` marker syntax. */
+function sanitizeMarkerText(value: string): string {
+  return value.replace(/[[\]:]/g, "");
+}
+
 function metadataLines(metadata: SongMetadata | undefined): string[] {
   if (!metadata) return [];
   const lines: string[] = [];
@@ -100,18 +105,33 @@ export function convert(boxes: LanguageBox[], options: ConvertOptions = {}): Con
     warnings.push(`Stanza count mismatch — ${detail}. Check stanza ${minStanzas + 1} onward.`);
   }
 
+  const codesByValue = new Map<string, string[]>();
+  parsed.forEach((box) => {
+    const code = box.code?.trim();
+    if (!code) return;
+    const labels = codesByValue.get(code) ?? [];
+    labels.push(box.label);
+    codesByValue.set(code, labels);
+  });
+  for (const [code, labels] of codesByValue) {
+    if (labels.length > 1) {
+      warnings.push(`Language code '${code}' is used by more than one box (${labels.join(", ")}).`);
+    }
+  }
+
   const metaLines = metadataLines(options.metadata);
   const groupLabels = options.groupLabels ?? [];
 
   const slides: string[] = [];
   for (let i = 0; i < maxStanzas; i++) {
     const slideLines: string[] = [];
-    const group = groupLabels[i]?.trim();
+    const group = sanitizeMarkerText(groupLabels[i]?.trim() ?? "");
     if (group) {
       slideLines.push(`[${group}]`);
     }
     parsed.forEach((box, boxIndex) => {
-      const marker = box.code?.trim() ? `[#${boxIndex + 1}:${box.code.trim()}]` : `[#${boxIndex + 1}]`;
+      const code = sanitizeMarkerText(box.code?.trim() ?? "");
+      const marker = code ? `[#${boxIndex + 1}:${code}]` : `[#${boxIndex + 1}]`;
       slideLines.push(marker);
       const stanza = box.stanzas[i] ?? [];
       slideLines.push(...stanza);
