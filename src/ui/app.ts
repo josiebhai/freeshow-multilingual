@@ -127,7 +127,7 @@ export function mountApp(root: HTMLElement): void {
         </div>
       </div>
       <div id="warnings" class="warnings" role="status" aria-live="polite"></div>
-      <textarea id="output" class="output" readonly aria-label="Converted FreeShow text" placeholder="Paste lyrics above to see the converted output here."></textarea>
+      <div id="output" class="output" role="textbox" aria-readonly="true" aria-multiline="true" tabindex="0" aria-label="Converted FreeShow text"></div>
     </section>
 
     <section class="faq-section" aria-label="Frequently asked questions">
@@ -154,9 +154,12 @@ export function mountApp(root: HTMLElement): void {
     </footer>
   `;
 
+  const OUTPUT_PLACEHOLDER = "Paste lyrics above to see the converted output here.";
+
   const boxesEl = root.querySelector<HTMLElement>("#boxes")!;
   const addBoxBtn = root.querySelector<HTMLButtonElement>("#add-box")!;
-  const outputEl = root.querySelector<HTMLTextAreaElement>("#output")!;
+  const outputEl = root.querySelector<HTMLElement>("#output")!;
+  let lastOutputText = "";
   const warningsEl = root.querySelector<HTMLElement>("#warnings")!;
   const copyBtn = root.querySelector<HTMLButtonElement>("#copy-btn")!;
   const downloadBtn = root.querySelector<HTMLButtonElement>("#download-btn")!;
@@ -271,9 +274,12 @@ export function mountApp(root: HTMLElement): void {
         <label>
           <span>Slide ${i + 1}</span>
           <div class="combobox">
-            <input type="text" class="slide-label-input" value="${escapeAttr(currentValue)}"
-              placeholder="e.g. Verse" autocomplete="off" role="combobox" aria-autocomplete="list"
-              aria-expanded="false" aria-label="Slide ${i + 1} group label" />
+            <div class="slide-tag-field">
+              <span class="slide-color-dot" aria-hidden="true"></span>
+              <input type="text" class="slide-label-input" value="${escapeAttr(currentValue)}"
+                placeholder="e.g. Verse" autocomplete="off" role="combobox" aria-autocomplete="list"
+                aria-expanded="false" aria-label="Slide ${i + 1} group label" />
+            </div>
             <ul class="slide-label-suggestions" role="listbox" hidden></ul>
           </div>
         </label>
@@ -281,6 +287,19 @@ export function mountApp(root: HTMLElement): void {
 
       const input = row.querySelector<HTMLInputElement>(".slide-label-input")!;
       const suggestionsEl = row.querySelector<HTMLUListElement>(".slide-label-suggestions")!;
+      const dot = row.querySelector<HTMLElement>(".slide-color-dot")!;
+
+      function updateDot(label: string) {
+        const trimmed = label.trim();
+        if (!trimmed) {
+          dot.style.background = "var(--fg-dim)";
+          dot.style.opacity = "0.35";
+        } else {
+          dot.style.background = `var(--tag-${tagColorFor(trimmed)}-fg)`;
+          dot.style.opacity = "1";
+        }
+      }
+      updateDot(currentValue);
 
       function showSuggestions() {
         const query = input.value.trim().toLowerCase();
@@ -301,6 +320,7 @@ export function mountApp(root: HTMLElement): void {
             e.preventDefault();
             input.value = matches[idx];
             state.groupLabels[i] = matches[idx];
+            updateDot(input.value);
             suggestionsEl.hidden = true;
             input.setAttribute("aria-expanded", "false");
             renderOutput();
@@ -311,6 +331,7 @@ export function mountApp(root: HTMLElement): void {
       input.addEventListener("focus", showSuggestions);
       input.addEventListener("input", () => {
         state.groupLabels[i] = input.value;
+        updateDot(input.value);
         showSuggestions();
         renderOutput();
       });
@@ -332,7 +353,8 @@ export function mountApp(root: HTMLElement): void {
     renderSlideLabels();
 
     if (!hasAnyText && !hasMetadata) {
-      outputEl.value = "";
+      lastOutputText = "";
+      outputEl.innerHTML = `<span class="output-placeholder">${escapeHtml(OUTPUT_PLACEHOLDER)}</span>`;
       warningsEl.innerHTML = "";
       copyBtn.disabled = true;
       downloadBtn.disabled = true;
@@ -340,7 +362,11 @@ export function mountApp(root: HTMLElement): void {
     }
 
     const result = convert(state.boxes, { metadata: state.metadata, groupLabels: state.groupLabels });
-    outputEl.value = result.output;
+    lastOutputText = result.output;
+    outputEl.innerHTML =
+      result.output === ""
+        ? `<span class="output-placeholder">${escapeHtml(OUTPUT_PLACEHOLDER)}</span>`
+        : renderOutputHtml(result.output);
     copyBtn.disabled = result.output === "";
     downloadBtn.disabled = result.output === "";
 
@@ -362,10 +388,16 @@ export function mountApp(root: HTMLElement): void {
 
   copyBtn.addEventListener("click", async () => {
     try {
-      await navigator.clipboard.writeText(outputEl.value);
+      await navigator.clipboard.writeText(lastOutputText);
     } catch {
-      outputEl.select();
+      const temp = document.createElement("textarea");
+      temp.value = lastOutputText;
+      temp.style.position = "fixed";
+      temp.style.opacity = "0";
+      document.body.appendChild(temp);
+      temp.select();
       document.execCommand("copy");
+      temp.remove();
     }
     const original = copyBtn.innerHTML;
     copyBtn.textContent = "Copied!";
@@ -377,7 +409,7 @@ export function mountApp(root: HTMLElement): void {
   });
 
   downloadBtn.addEventListener("click", () => {
-    const blob = new Blob([outputEl.value], { type: "text/plain;charset=utf-8" });
+    const blob = new Blob([lastOutputText], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     const filename = state.metadata.title?.trim() ? `${slugify(state.metadata.title)}.txt` : "freeshow-lyrics.txt";
@@ -391,6 +423,24 @@ export function mountApp(root: HTMLElement): void {
 
   renderBoxes();
   renderOutput();
+}
+
+/** Colors `[#N:code]` language markers and `[Group]` slide labels for display. Copy/download always use the plain source text. */
+function renderOutputHtml(text: string): string {
+  return text
+    .split("\n")
+    .map((line) => {
+      const marker = line.match(/^\[#\d+(?::(.+))?\]$/);
+      if (marker) {
+        return `<span class="out-marker tag-${tagColorFor(marker[1])}-fg">${escapeHtml(line)}</span>`;
+      }
+      const group = line.match(/^\[(.+)\]$/);
+      if (group) {
+        return `<span class="out-marker tag-${tagColorFor(group[1])}-fg">${escapeHtml(line)}</span>`;
+      }
+      return escapeHtml(line);
+    })
+    .join("\n");
 }
 
 function escapeHtml(value: string): string {

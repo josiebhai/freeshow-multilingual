@@ -28,7 +28,12 @@
   --tag-olive-fg: #7d7716;
   --tag-olive-bg: rgba(125, 119, 22, 0.14);
 
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+h1,
+h2 {
+  font-family: "Sora", "Manrope", system-ui, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -242,14 +247,47 @@ textarea:focus-visible {
   position: relative;
 }
 
+.slide-tag-field {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--card-bg-2);
+}
+
+.slide-tag-field:focus-within {
+  border-color: var(--accent);
+}
+
+.slide-color-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--fg-dim);
+  opacity: 0.35;
+  transition: background-color 0.12s ease, opacity 0.12s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .slide-color-dot {
+    transition: none;
+  }
+}
+
 .slide-label-input {
   width: 100%;
-  padding: 0.4rem;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  background: var(--card-bg-2);
+  padding: 0.4rem 0;
+  border: none;
+  background: transparent;
   color: var(--fg);
   font: inherit;
+}
+
+.slide-label-input:focus-visible {
+  outline: none;
 }
 
 .slide-label-suggestions {
@@ -334,7 +372,7 @@ textarea:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.02em;
@@ -441,7 +479,7 @@ textarea:focus-visible {
   border-radius: 6px;
   background: var(--card-bg-2);
   color: var(--fg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9rem;
   line-height: 1.4;
 }
@@ -534,15 +572,52 @@ textarea:focus-visible {
 }
 
 .output {
+  display: block;
   width: 100%;
   min-height: 260px;
+  margin: 0;
   padding: 0.75rem;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--card-bg);
   color: var(--fg);
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.9rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+
+.output-placeholder {
+  color: var(--fg-dim);
+  font-family: "Manrope", system-ui, sans-serif;
+}
+
+.out-marker {
+  font-weight: 700;
+}
+
+.tag-blue-fg {
+  color: var(--tag-blue-fg);
+}
+.tag-amber-fg {
+  color: var(--tag-amber-fg);
+}
+.tag-violet-fg {
+  color: var(--tag-violet-fg);
+}
+.tag-green-fg {
+  color: var(--tag-green-fg);
+}
+.tag-pink-fg {
+  color: var(--tag-pink-fg);
+}
+.tag-cyan-fg {
+  color: var(--tag-cyan-fg);
+}
+.tag-olive-fg {
+  color: var(--tag-olive-fg);
 }
 
 /* ---------- FAQ ---------- */
@@ -606,7 +681,7 @@ textarea:focus-visible {
 }
 
 .faq code {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
   background: var(--card-bg-2);
   border-radius: 4px;
   padding: 0.05rem 0.35rem;
