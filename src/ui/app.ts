@@ -1,4 +1,4 @@
-import { convert, type LanguageBox, type SongMetadata } from "../lib/convert";
+import { convert, parseStanzas, type LanguageBox, type SongMetadata } from "../lib/convert";
 
 interface BoxState extends LanguageBox {
   id: string;
@@ -8,10 +8,14 @@ interface State {
   boxes: BoxState[];
   metadata: SongMetadata;
   metadataOpen: boolean;
+  /** Per-slide group label (e.g. "Verse"), indexed by slide index. */
+  groupLabels: (string | undefined)[];
 }
 
 let nextId = 1;
 const newId = () => `box-${nextId++}`;
+
+const GROUP_LABEL_SUGGESTIONS = ["Verse", "Chorus", "Bridge", "Intro", "Outro", "Tag"];
 
 function initialState(): State {
   return {
@@ -21,7 +25,12 @@ function initialState(): State {
     ],
     metadata: {},
     metadataOpen: false,
+    groupLabels: [],
   };
+}
+
+function maxSlideCount(boxes: LanguageBox[]): number {
+  return boxes.reduce((max, box) => Math.max(max, parseStanzas(box.text).length), 0);
 }
 
 export function mountApp(root: HTMLElement): void {
@@ -52,6 +61,15 @@ export function mountApp(root: HTMLElement): void {
 
     <button type="button" id="add-box" class="secondary-button">+ Add language</button>
 
+    <section id="slide-labels-section" class="slide-labels-section" hidden>
+      <h2 class="slide-labels-heading">Slide labels (optional)</h2>
+      <p class="subtitle">Name each slide (Verse, Chorus, Bridge...) — applies to every language on that slide.</p>
+      <datalist id="group-label-suggestions">
+        ${GROUP_LABEL_SUGGESTIONS.map((s) => `<option value="${escapeAttr(s)}"></option>`).join("")}
+      </datalist>
+      <div id="slide-labels" class="slide-labels"></div>
+    </section>
+
     <section class="output-section">
       <div class="output-header">
         <h2>Output</h2>
@@ -77,6 +95,9 @@ export function mountApp(root: HTMLElement): void {
   const metaAuthor = root.querySelector<HTMLInputElement>("#meta-author")!;
   const metaCcli = root.querySelector<HTMLInputElement>("#meta-ccli")!;
   const metaCopyright = root.querySelector<HTMLInputElement>("#meta-copyright")!;
+  const slideLabelsSection = root.querySelector<HTMLElement>("#slide-labels-section")!;
+  const slideLabelsEl = root.querySelector<HTMLElement>("#slide-labels")!;
+  let renderedSlideCount = -1;
 
   metadataToggle.addEventListener("click", () => {
     state.metadataOpen = !state.metadataOpen;
@@ -158,9 +179,35 @@ export function mountApp(root: HTMLElement): void {
     });
   }
 
+  function renderSlideLabels() {
+    const slideCount = maxSlideCount(state.boxes);
+    slideLabelsSection.hidden = slideCount === 0;
+    if (slideCount === renderedSlideCount) return;
+    renderedSlideCount = slideCount;
+
+    slideLabelsEl.innerHTML = "";
+    for (let i = 0; i < slideCount; i++) {
+      const row = document.createElement("label");
+      row.className = "slide-label-row";
+      row.innerHTML = `
+        <span>Slide ${i + 1}</span>
+        <input type="text" class="slide-label-input" list="group-label-suggestions"
+          value="${escapeAttr(state.groupLabels[i] ?? "")}" placeholder="e.g. Verse"
+          aria-label="Slide ${i + 1} group label" />
+      `;
+      row.querySelector<HTMLInputElement>(".slide-label-input")!.addEventListener("input", (e) => {
+        state.groupLabels[i] = (e.target as HTMLInputElement).value;
+        renderOutput();
+      });
+      slideLabelsEl.appendChild(row);
+    }
+  }
+
   function renderOutput() {
     const hasAnyText = state.boxes.some((box) => box.text.trim() !== "");
     const hasMetadata = Object.values(state.metadata).some((v) => v?.trim());
+
+    renderSlideLabels();
 
     if (!hasAnyText && !hasMetadata) {
       outputEl.value = "";
@@ -170,7 +217,7 @@ export function mountApp(root: HTMLElement): void {
       return;
     }
 
-    const result = convert(state.boxes, { metadata: state.metadata });
+    const result = convert(state.boxes, { metadata: state.metadata, groupLabels: state.groupLabels });
     outputEl.value = result.output;
     copyBtn.disabled = result.output === "";
     downloadBtn.disabled = result.output === "";

@@ -35,7 +35,10 @@ for the related feature request.
 4. Reorder boxes with the up/down arrows — box order determines `[#1]`,
    `[#2]`, `[#3]`... numbering, which affects which text style each language
    gets in FreeShow.
-5. The output box updates as you type. Copy it (or download it as `.txt`)
+5. Optionally name each slide (Verse, Chorus, Bridge...) in the "Slide
+   labels" section that appears once you've pasted some lyrics — one label
+   per slide, applied across every language on that slide.
+6. The output box updates as you type. Copy it (or download it as `.txt`)
    and paste it into FreeShow's Text Edit / Quick Lyrics box.
 
 If your language boxes don't have the same number of stanzas, the tool
