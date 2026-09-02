@@ -1,4 +1,4 @@
-import { convert, type LanguageBox, type SongMetadata } from "../lib/convert";
+import { convert, parseStanzas, type LanguageBox, type SongMetadata } from "../lib/convert";
 
 interface BoxState extends LanguageBox {
   id: string;
@@ -8,10 +8,14 @@ interface State {
   boxes: BoxState[];
   metadata: SongMetadata;
   metadataOpen: boolean;
+  /** Per-slide group label (e.g. "Verse"), indexed by slide index. */
+  groupLabels: (string | undefined)[];
 }
 
 let nextId = 1;
 const newId = () => `box-${nextId++}`;
+
+const GROUP_LABEL_PRESETS = ["Verse", "Chorus", "Bridge", "Intro", "Outro"];
 
 function initialState(): State {
   return {
@@ -21,7 +25,12 @@ function initialState(): State {
     ],
     metadata: {},
     metadataOpen: false,
+    groupLabels: [],
   };
+}
+
+function maxSlideCount(boxes: LanguageBox[]): number {
+  return boxes.reduce((max, box) => Math.max(max, parseStanzas(box.text).length), 0);
 }
 
 export function mountApp(root: HTMLElement): void {
@@ -52,6 +61,12 @@ export function mountApp(root: HTMLElement): void {
 
     <button type="button" id="add-box" class="secondary-button">+ Add language</button>
 
+    <section id="slide-labels-section" class="slide-labels-section" hidden>
+      <h2 class="slide-labels-heading">Slide labels (optional)</h2>
+      <p class="subtitle">Name each slide (Verse, Chorus, Bridge...) — applies to every language on that slide.</p>
+      <div id="slide-labels" class="slide-labels"></div>
+    </section>
+
     <section class="output-section">
       <div class="output-header">
         <h2>Output</h2>
@@ -77,6 +92,9 @@ export function mountApp(root: HTMLElement): void {
   const metaAuthor = root.querySelector<HTMLInputElement>("#meta-author")!;
   const metaCcli = root.querySelector<HTMLInputElement>("#meta-ccli")!;
   const metaCopyright = root.querySelector<HTMLInputElement>("#meta-copyright")!;
+  const slideLabelsSection = root.querySelector<HTMLElement>("#slide-labels-section")!;
+  const slideLabelsEl = root.querySelector<HTMLElement>("#slide-labels")!;
+  let renderedSlideCount = -1;
 
   metadataToggle.addEventListener("click", () => {
     state.metadataOpen = !state.metadataOpen;
@@ -158,9 +176,81 @@ export function mountApp(root: HTMLElement): void {
     });
   }
 
+  function renderSlideLabels() {
+    const slideCount = maxSlideCount(state.boxes);
+    slideLabelsSection.hidden = slideCount === 0;
+    if (slideCount === renderedSlideCount) return;
+    renderedSlideCount = slideCount;
+
+    slideLabelsEl.innerHTML = "";
+    for (let i = 0; i < slideCount; i++) {
+      const currentValue = state.groupLabels[i] ?? "";
+
+      const row = document.createElement("div");
+      row.className = "slide-label-row";
+      row.innerHTML = `
+        <label>
+          <span>Slide ${i + 1}</span>
+          <div class="combobox">
+            <input type="text" class="slide-label-input" value="${escapeAttr(currentValue)}"
+              placeholder="e.g. Verse" autocomplete="off" role="combobox" aria-autocomplete="list"
+              aria-expanded="false" aria-label="Slide ${i + 1} group label" />
+            <ul class="slide-label-suggestions" role="listbox" hidden></ul>
+          </div>
+        </label>
+      `;
+
+      const input = row.querySelector<HTMLInputElement>(".slide-label-input")!;
+      const suggestionsEl = row.querySelector<HTMLUListElement>(".slide-label-suggestions")!;
+
+      function showSuggestions() {
+        const query = input.value.trim().toLowerCase();
+        const matches = GROUP_LABEL_PRESETS.filter((preset) => preset.toLowerCase().includes(query));
+        if (matches.length === 0) {
+          suggestionsEl.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+          return;
+        }
+        suggestionsEl.innerHTML = matches
+          .map((preset) => `<li role="option"><button type="button" class="slide-label-suggestion">${escapeHtml(preset)}</button></li>`)
+          .join("");
+        suggestionsEl.hidden = false;
+        input.setAttribute("aria-expanded", "true");
+        suggestionsEl.querySelectorAll<HTMLButtonElement>(".slide-label-suggestion").forEach((btn, idx) => {
+          // mousedown fires before the input's blur, so the click isn't lost
+          btn.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            input.value = matches[idx];
+            state.groupLabels[i] = matches[idx];
+            suggestionsEl.hidden = true;
+            input.setAttribute("aria-expanded", "false");
+            renderOutput();
+          });
+        });
+      }
+
+      input.addEventListener("focus", showSuggestions);
+      input.addEventListener("input", () => {
+        state.groupLabels[i] = input.value;
+        showSuggestions();
+        renderOutput();
+      });
+      input.addEventListener("blur", () => {
+        setTimeout(() => {
+          suggestionsEl.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+        }, 150);
+      });
+
+      slideLabelsEl.appendChild(row);
+    }
+  }
+
   function renderOutput() {
     const hasAnyText = state.boxes.some((box) => box.text.trim() !== "");
     const hasMetadata = Object.values(state.metadata).some((v) => v?.trim());
+
+    renderSlideLabels();
 
     if (!hasAnyText && !hasMetadata) {
       outputEl.value = "";
@@ -170,7 +260,7 @@ export function mountApp(root: HTMLElement): void {
       return;
     }
 
-    const result = convert(state.boxes, { metadata: state.metadata });
+    const result = convert(state.boxes, { metadata: state.metadata, groupLabels: state.groupLabels });
     outputEl.value = result.output;
     copyBtn.disabled = result.output === "";
     downloadBtn.disabled = result.output === "";
