@@ -18,10 +18,10 @@ interleave markers line by line, e.g.:
 ```
 
 For a real song with several stanzas, typing this out by hand is slow and
-error-prone. A [feature request](https://github.com/ChurchApps/FreeShow/issues/3617)
-for a side-by-side, per-language paste UI was closed as "not planned" by the
-FreeShow maintainers, so this tool exists as a standalone companion instead:
-paste each language into its own box, and get FreeShow-ready text out.
+error-prone, so this tool exists as a standalone companion instead: paste
+each language into its own box, and get FreeShow-ready text out. See
+[ChurchApps/FreeShow#3617](https://github.com/ChurchApps/FreeShow/issues/3617)
+for the related feature request.
 
 ## How it works
 
