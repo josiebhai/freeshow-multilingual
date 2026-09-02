@@ -510,7 +510,6 @@ textarea:focus-visible {
 .secondary-button {
   background: var(--card-bg);
   color: var(--fg);
-  margin-top: 1rem;
 }
 
 .add-lang-button {
