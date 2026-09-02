@@ -15,7 +15,8 @@ interface State {
 let nextId = 1;
 const newId = () => `box-${nextId++}`;
 
-const GROUP_LABEL_SUGGESTIONS = ["Verse", "Chorus", "Bridge", "Intro", "Outro", "Tag"];
+const GROUP_LABEL_PRESETS = ["Verse", "Chorus", "Bridge", "Intro", "Outro"];
+const CUSTOM_LABEL_VALUE = "__custom__";
 
 function initialState(): State {
   return {
@@ -64,9 +65,6 @@ export function mountApp(root: HTMLElement): void {
     <section id="slide-labels-section" class="slide-labels-section" hidden>
       <h2 class="slide-labels-heading">Slide labels (optional)</h2>
       <p class="subtitle">Name each slide (Verse, Chorus, Bridge...) — applies to every language on that slide.</p>
-      <datalist id="group-label-suggestions">
-        ${GROUP_LABEL_SUGGESTIONS.map((s) => `<option value="${escapeAttr(s)}"></option>`).join("")}
-      </datalist>
       <div id="slide-labels" class="slide-labels"></div>
     </section>
 
@@ -187,18 +185,46 @@ export function mountApp(root: HTMLElement): void {
 
     slideLabelsEl.innerHTML = "";
     for (let i = 0; i < slideCount; i++) {
-      const row = document.createElement("label");
+      const currentValue = state.groupLabels[i] ?? "";
+      const isCustom = currentValue !== "" && !GROUP_LABEL_PRESETS.includes(currentValue);
+
+      const row = document.createElement("div");
       row.className = "slide-label-row";
       row.innerHTML = `
-        <span>Slide ${i + 1}</span>
-        <input type="text" class="slide-label-input" list="group-label-suggestions"
-          value="${escapeAttr(state.groupLabels[i] ?? "")}" placeholder="e.g. Verse"
-          aria-label="Slide ${i + 1} group label" />
+        <label>
+          <span>Slide ${i + 1}</span>
+          <select class="slide-label-select" aria-label="Slide ${i + 1} group label">
+            <option value="">No label</option>
+            ${GROUP_LABEL_PRESETS.map((preset) => `<option value="${escapeAttr(preset)}" ${preset === currentValue ? "selected" : ""}>${escapeHtml(preset)}</option>`).join("")}
+            <option value="${CUSTOM_LABEL_VALUE}" ${isCustom ? "selected" : ""}>Custom…</option>
+          </select>
+        </label>
+        <input type="text" class="slide-label-custom" placeholder="Custom label"
+          value="${escapeAttr(isCustom ? currentValue : "")}"
+          aria-label="Slide ${i + 1} custom group label" ${isCustom ? "" : "hidden"} />
       `;
-      row.querySelector<HTMLInputElement>(".slide-label-input")!.addEventListener("input", (e) => {
-        state.groupLabels[i] = (e.target as HTMLInputElement).value;
+
+      const select = row.querySelector<HTMLSelectElement>(".slide-label-select")!;
+      const customInput = row.querySelector<HTMLInputElement>(".slide-label-custom")!;
+
+      select.addEventListener("change", () => {
+        if (select.value === CUSTOM_LABEL_VALUE) {
+          customInput.hidden = false;
+          customInput.value = "";
+          customInput.focus();
+          state.groupLabels[i] = "";
+        } else {
+          customInput.hidden = true;
+          customInput.value = "";
+          state.groupLabels[i] = select.value || undefined;
+        }
         renderOutput();
       });
+      customInput.addEventListener("input", () => {
+        state.groupLabels[i] = customInput.value;
+        renderOutput();
+      });
+
       slideLabelsEl.appendChild(row);
     }
   }
