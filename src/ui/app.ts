@@ -16,7 +16,6 @@ let nextId = 1;
 const newId = () => `box-${nextId++}`;
 
 const GROUP_LABEL_PRESETS = ["Verse", "Chorus", "Bridge", "Intro", "Outro"];
-const CUSTOM_LABEL_VALUE = "__custom__";
 
 function initialState(): State {
   return {
@@ -186,43 +185,61 @@ export function mountApp(root: HTMLElement): void {
     slideLabelsEl.innerHTML = "";
     for (let i = 0; i < slideCount; i++) {
       const currentValue = state.groupLabels[i] ?? "";
-      const isCustom = currentValue !== "" && !GROUP_LABEL_PRESETS.includes(currentValue);
 
       const row = document.createElement("div");
       row.className = "slide-label-row";
       row.innerHTML = `
         <label>
           <span>Slide ${i + 1}</span>
-          <select class="slide-label-select" aria-label="Slide ${i + 1} group label">
-            <option value="">No label</option>
-            ${GROUP_LABEL_PRESETS.map((preset) => `<option value="${escapeAttr(preset)}" ${preset === currentValue ? "selected" : ""}>${escapeHtml(preset)}</option>`).join("")}
-            <option value="${CUSTOM_LABEL_VALUE}" ${isCustom ? "selected" : ""}>Custom…</option>
-          </select>
+          <div class="combobox">
+            <input type="text" class="slide-label-input" value="${escapeAttr(currentValue)}"
+              placeholder="e.g. Verse" autocomplete="off" role="combobox" aria-autocomplete="list"
+              aria-expanded="false" aria-label="Slide ${i + 1} group label" />
+            <ul class="slide-label-suggestions" role="listbox" hidden></ul>
+          </div>
         </label>
-        <input type="text" class="slide-label-custom" placeholder="Custom label"
-          value="${escapeAttr(isCustom ? currentValue : "")}"
-          aria-label="Slide ${i + 1} custom group label" ${isCustom ? "" : "hidden"} />
       `;
 
-      const select = row.querySelector<HTMLSelectElement>(".slide-label-select")!;
-      const customInput = row.querySelector<HTMLInputElement>(".slide-label-custom")!;
+      const input = row.querySelector<HTMLInputElement>(".slide-label-input")!;
+      const suggestionsEl = row.querySelector<HTMLUListElement>(".slide-label-suggestions")!;
 
-      select.addEventListener("change", () => {
-        if (select.value === CUSTOM_LABEL_VALUE) {
-          customInput.hidden = false;
-          customInput.value = "";
-          customInput.focus();
-          state.groupLabels[i] = "";
-        } else {
-          customInput.hidden = true;
-          customInput.value = "";
-          state.groupLabels[i] = select.value || undefined;
+      function showSuggestions() {
+        const query = input.value.trim().toLowerCase();
+        const matches = GROUP_LABEL_PRESETS.filter((preset) => preset.toLowerCase().includes(query));
+        if (matches.length === 0) {
+          suggestionsEl.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+          return;
         }
+        suggestionsEl.innerHTML = matches
+          .map((preset) => `<li role="option"><button type="button" class="slide-label-suggestion">${escapeHtml(preset)}</button></li>`)
+          .join("");
+        suggestionsEl.hidden = false;
+        input.setAttribute("aria-expanded", "true");
+        suggestionsEl.querySelectorAll<HTMLButtonElement>(".slide-label-suggestion").forEach((btn, idx) => {
+          // mousedown fires before the input's blur, so the click isn't lost
+          btn.addEventListener("mousedown", (e) => {
+            e.preventDefault();
+            input.value = matches[idx];
+            state.groupLabels[i] = matches[idx];
+            suggestionsEl.hidden = true;
+            input.setAttribute("aria-expanded", "false");
+            renderOutput();
+          });
+        });
+      }
+
+      input.addEventListener("focus", showSuggestions);
+      input.addEventListener("input", () => {
+        state.groupLabels[i] = input.value;
+        showSuggestions();
         renderOutput();
       });
-      customInput.addEventListener("input", () => {
-        state.groupLabels[i] = customInput.value;
-        renderOutput();
+      input.addEventListener("blur", () => {
+        setTimeout(() => {
+          suggestionsEl.hidden = true;
+          input.setAttribute("aria-expanded", "false");
+        }, 150);
       });
 
       slideLabelsEl.appendChild(row);

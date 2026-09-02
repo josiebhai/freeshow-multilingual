@@ -122,14 +122,51 @@ textarea:focus-visible {
   gap: 0.2rem;
 }
 
-.slide-label-row select,
-.slide-label-row input {
+.combobox {
+  position: relative;
+}
+
+.slide-label-input {
+  width: 100%;
   padding: 0.4rem;
   border: 1px solid var(--border);
   border-radius: 4px;
   background: var(--card-bg);
   color: var(--fg);
   font: inherit;
+}
+
+.slide-label-suggestions {
+  position: absolute;
+  z-index: 10;
+  top: calc(100% + 2px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0.25rem;
+  list-style: none;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+}
+
+.slide-label-suggestion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: none;
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+.slide-label-suggestion:hover,
+.slide-label-suggestion:focus-visible {
+  background: var(--bg);
 }
 
 .box-card {
